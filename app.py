@@ -36,12 +36,12 @@ fig.suptitle("Top Players by Rating and First Engagement Performance")
 
 # Plot 1: Top 10 Players by Rating with their K/D Ratios
 sns.barplot(
-    data=top_rated_players.sort_values("Rating", ascending=False),
-    x="Rating",
-    y="Player",
-    hue="Kills:Deaths",
-    palette="viridis",
-    ax=axes[0]
+    data = top_rated_players.sort_values("Rating", ascending=False),
+    x = "Rating",
+    y = "Player",
+    hue = "Kills:Deaths",
+    palette = "viridis",
+    ax = axes[0]
 )
 axes[0].set_title("Top-Rated Players with K/D Ratios")
 axes[0].set_xlabel("Player Rating")
