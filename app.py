@@ -9,9 +9,19 @@ player_stats_df = pd.read_csv('C:/Users/haide/Documents/GitHub/Python-Data-Analy
 
 
 
-# 1. Player Effectiveness and Consistency
+# Player Effectiveness and Consistency
 # Finding the players with the highest Ratings, Kills:Deaths ratio, and Average Combat Score
-top_rated_players = player_stats_df[['Player', 'Teams', 'Rating', 'Kills:Deaths', 'Average Combat Score']].sort_values(by=['Rating'], ascending=False).drop_duplicates(subset=['Player']).head(10)
+# Get top 10 players by rating
+top_rated_players = (
+    player_stats_df[['Player', 
+                     'Teams', 
+                     'Rating',
+                     'Kills:Deaths', 
+                     'Average Combat Score']]
+    .sort_values(by=['Rating'], ascending=False)
+    .drop_duplicates(subset=['Player'])
+    .head(10)
+)
 
 print(top_rated_players)
 
@@ -20,7 +30,7 @@ print(top_rated_players)
 #top_rated_players.to_csv('top_rated_players.csv')
 #top_rated_players.to_excel('top_rated_players.xlsx', sheet_name='Sheet1', index=False)
 
-# 2. First Engagements and Clutch Factor
+#First Engagements and Clutch Factor
 # Finding players with high First Kill and Clutch Success ratios
 first_engagements = player_stats_df[['Player', 'Teams', 'First Kills', 'First Deaths', 'Clutch Success %']].copy()
 first_engagements['First Engagement Ratio'] = first_engagements['First Kills'] / (first_engagements['First Deaths'] + 1e-9)
