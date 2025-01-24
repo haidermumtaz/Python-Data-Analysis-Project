@@ -18,45 +18,85 @@ player_stats = player_stats_df.groupby('Player').agg({
 }).round(2)
 
 
-def create_table(data, target_column, title):
-    # Reorder columns to have the target variable first after Player and Team
-    reordered_columns = ['Player', 'Teams', target_column] + [col for col in data.columns if col not in ['Player', 'Teams', target_column]]
-    data_reordered = data.reset_index()[reordered_columns]
+def create_generic_table(data, title, target):
+    """
+    Creates and displays a styled table from a given DataFrame.
 
-    # Create a mapping for column name replacements
+    Parameters:
+    - data (pd.DataFrame): The DataFrame to be displayed as a table.
+    - title (str): The title of the table.
+    - target (str): The column name to prioritize and place next to 'Player' and 'Teams'.
+    """
+    # Reset index to ensure 'Player' or other index columns are included if present
+    data_reset = data.reset_index()
+
+    # Identify key columns to prioritize
+    key_columns = ['Player', 'Teams']
+    existing_key_columns = [col for col in key_columns if col in data_reset.columns]
+
+    # Include the target column if it exists
+    if target in data_reset.columns:
+        existing_key_columns.append(target)
+    else:
+        print(f"Warning: Target column '{target}' not found in DataFrame.")
+
+    # Determine the remaining columns
+    remaining_columns = [col for col in data_reset.columns if col not in existing_key_columns]
+
+    # Reorder columns: key columns first (Player, Teams, Target), then the rest
+    reordered_columns = existing_key_columns + remaining_columns
+    data_reordered = data_reset[reordered_columns]
+
+    # Create a mapping for column name replacements (extend as needed)
     column_mapping = {
         'Average Damage Per Round': 'ADR',
         'Kills Per Round': 'KPR',
         'Teams': 'Team',
         'Average Combat Score': 'ACS',
-        'Kills:Deaths': 'K/D'
+        'Kills:Deaths': 'K/D',
+        'Clutch Success %': 'Clutch %'
+        # Add more mappings here if needed
     }
 
     # Replace column labels using the mapping
     col_labels = [column_mapping.get(col, col) for col in reordered_columns]
 
+    # Initialize the matplotlib figure and axis
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.set_axis_off()
+
+    # Create the table
     table = ax.table(
         cellText=data_reordered.values,
         colLabels=col_labels,
         loc='center',
         cellLoc='center'
     )
+
+    # Set table styling
     table.auto_set_font_size(False)
     table.set_fontsize(9)
     table.scale(1.2, 1.8)
+
     num_columns = len(data_reordered.columns)
+
+    # Style the header row
     for i in range(num_columns):
         table[(0, i)].set_facecolor('#4472C4')
         table[(0, i)].set_text_props(color='white')
+
+    # Alternate row colors for better readability
     for j in range(1, len(data_reordered) + 1):
         for i in range(num_columns):
             if j % 2 == 0:
-                table[(j, i)].set_facecolor('#f2f2f2')
+                table[(j, i)].set_facecolor('#f2f2f2')  # Light gray for even rows
             else:
-                table[(j, i)].set_facecolor('#ffffff')
+                table[(j, i)].set_facecolor('#ffffff')  # White for odd rows
+
+    # Add title to the table
     plt.title(title, pad=20, fontsize=14)
+
+    # Adjust layout and display the table
     plt.tight_layout()
     plt.show()
 
@@ -70,14 +110,14 @@ top_players_acs = player_stats.sort_values('Average Combat Score', ascending=Fal
 # Sort by K/D ratio
 top_players_kd = player_stats.sort_values('Kills:Deaths', ascending=False).head(10)
 
-# Create table for top players by Rating
-create_table(top_players_rating, 'Rating', 'Top 10 Players by Average Rating')
+# # Create table for top players by Rating
+# create_generic_table(top_players_rating, 'Top 10 Players by Average Rating', 'Rating')
 
-# Create table for top players by ACS
-create_table(top_players_acs, 'Average Combat Score', 'Top 10 Players by Average Combat Score')
+# # Create table for top players by ACS
+# create_generic_table(top_players_acs, 'Top 10 Players by Average Combat Score', 'Average Combat Score')
 
-# Create table for top players by K/D ratio
-create_table(top_players_kd, 'Kills:Deaths', 'Top 10 Players by Average K/D Ratio')
+# # Create table for top players by K/D ratio
+# create_generic_table(top_players_kd, 'Top 10 Players by Average K/D Ratio', 'Kills:Deaths')
 
 # Extract player names from each table
 players_rating = set(top_players_rating.index)
@@ -94,15 +134,15 @@ player_counts = Counter(all_players)
 common_players = [player for player, count in player_counts.items() if count > 1]
 
 # Display the common players
-print("Players appearing in more than one category:")
-print(common_players)
+# print("Players appearing in more than one category:")
+# print(common_players)
 
 # Optionally, create a DataFrame to display their stats
 common_players_stats = player_stats.loc[common_players]
 print(common_players_stats)
 
 # Create a table for common players
-create_table(common_players_stats, 'Rating', 'Highest-Performing and Most Consistent Players')
+create_generic_table(common_players_stats, 'Highest-Performing and Most Consistent Players', 'Rating')
 
 # Analyze clutch performance and entry impact
 clutch_stats = player_stats_df.groupby('Player').agg({
@@ -167,5 +207,221 @@ def create_clutch_table(data, title):
     plt.show()
 
 # Create table for top clutch players
-create_clutch_table(top_clutch_players, 'Top 10 Players by Average Clutch Success %')
+create_generic_table(top_clutch_players, 'Top 10 Players by Average Clutch Success %', 'Clutch Success %')
 
+def create_generic_bar(data, title, target):
+    """
+    Creates and displays a styled bar graph from a given DataFrame.
+
+    Parameters:
+    - data (pd.DataFrame): The DataFrame to be displayed as a bar graph.
+    - title (str): The title of the graph.
+    - target (str): The column name to use for the bar values.
+    """
+    # Reset index if it contains the player names
+    data_reset = data.reset_index()
+
+    # Create a mapping for column name replacements
+    column_mapping = {
+        'Average Damage Per Round': 'ADR',
+        'Kills Per Round': 'KPR',
+        'Teams': 'Team',
+        'Average Combat Score': 'ACS',
+        'Kills:Deaths': 'K/D',
+        'Clutch Success %': 'Clutch %'
+        # Add more mappings here if needed
+    }
+
+    # Get the target column label
+    target_label = column_mapping.get(target, target)
+
+    # Create the figure and axis
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    # Create bars
+    bars = ax.bar(
+        data_reset['Player'],
+        data_reset[target],
+        color='#4472C4'
+    )
+
+    # Customize the plot
+    ax.set_title(title, pad=20, fontsize=14)
+    ax.set_xlabel('Player', fontsize=10)
+    ax.set_ylabel(target_label, fontsize=10)
+
+    # Rotate x-axis labels for better readability
+    plt.xticks(rotation=45, ha='right')
+
+    # Add team labels above each bar
+    if 'Teams' in data_reset.columns:
+        for idx, bar in enumerate(bars):
+            team = data_reset['Teams'].iloc[idx]
+            height = bar.get_height()
+            ax.text(
+                bar.get_x() + bar.get_width()/2,
+                height,
+                team,
+                ha='center',
+                va='bottom',
+                fontsize=8,
+                rotation=0
+            )
+
+    # Add value labels on top of each bar
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(
+            bar.get_x() + bar.get_width()/2,
+            height/2,  # Position in middle of bar
+            f'{height:.2f}',
+            ha='center',
+            va='center',
+            color='white',
+            fontsize=9
+        )
+
+    # Add grid lines for better readability
+    ax.yaxis.grid(True, linestyle='--', alpha=0.7)
+    ax.set_axisbelow(True)  # Place grid lines behind bars
+
+    # Adjust layout to prevent label cutoff
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
+
+create_generic_bar(top_clutch_players, 'Top 10 Players by Clutch Success %', 'Clutch Success %')
+
+
+# create_generic_bar(top_players_rating, 'Top Players by Rating', 'Rating')
+
+# # Create table for top players by Rating
+
+
+# # Create table for top players by ACS
+# create_generic_bar(top_players_acs, 'Top 10 Players by Average Combat Score', 'Average Combat Score')
+
+# # Create table for top players by K/D ratio
+# create_generic_bar(top_players_kd, 'Top 10 Players by Average K/D Ratio', 'Kills:Deaths')
+
+def create_radar_chart(data, title):
+    """
+    Creates a radar chart to visualize player performance across multiple statistics.
+    Values are normalized to a 0-1 scale for fair comparison.
+    
+    Parameters:
+    - data (pd.DataFrame): DataFrame containing player statistics
+    - title (str): Title for the visualization
+    """
+    # Select the metrics we want to compare (excluding Teams)
+    metrics = ['Rating', 'Average Combat Score', 'Kills:Deaths', 
+               'Headshot %', 'Average Damage Per Round', 'Kills Per Round']
+    
+    # Create a copy of the data for normalization
+    plot_data = data[metrics].copy()
+    
+    # Normalize each metric to 0-1 scale
+    for metric in metrics:
+        min_val = plot_data[metric].min()
+        max_val = plot_data[metric].max()
+        plot_data[metric] = (plot_data[metric] - min_val) / (max_val - min_val)
+    
+    # Number of metrics
+    num_metrics = len(metrics)
+    
+    # Compute angle for each metric
+    angles = [n / float(num_metrics) * 2 * np.pi for n in range(num_metrics)]
+    angles += angles[:1]  # Complete the circle
+    
+    # Create figure
+    fig, ax = plt.subplots(figsize=(12, 8), subplot_kw=dict(projection='polar'))
+    
+    # Plot for each player
+    for idx, player in enumerate(data.index):
+        # Get player's normalized values
+        values = plot_data.loc[player].values.flatten().tolist()
+        values += values[:1]  # Complete the circle
+        
+        # Plot the player's line
+        ax.plot(angles, values, linewidth=2, linestyle='solid', label=f"{player} ({data.loc[player, 'Teams']})")
+        ax.fill(angles, values, alpha=0.1)
+    
+    # Fix axis to go in the right order and start at 12 o'clock
+    ax.set_theta_offset(np.pi / 2)
+    ax.set_theta_direction(-1)
+    
+    # Draw axis lines for each metric and label them
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels([metric if metric not in ['Average Combat Score', 'Average Damage Per Round', 'Kills Per Round'] 
+                        else {'Average Combat Score': 'ACS', 
+                             'Average Damage Per Round': 'ADR',
+                             'Kills Per Round': 'KPR'}[metric] 
+                        for metric in metrics])
+    
+    # Set the ylim to [0, 1] since we normalized the data
+    ax.set_ylim(0, 1)
+    
+    # Add gridlines at 0.2, 0.4, 0.6, and 0.8
+    ax.set_rgrids([0.2, 0.4, 0.6, 0.8], angle=0)
+    
+    # Add legend
+    plt.legend(loc='center left', bbox_to_anchor=(1.2, 0.5))
+    
+    # Add title
+    plt.title(title, y=1.05, fontsize=14)
+    
+    # Adjust layout to prevent label cutoff
+    plt.tight_layout()
+    
+    # Show the plot
+    plt.show()
+# Create the radar chart for common players
+create_radar_chart(common_players_stats, 'Performance Comparison of Top Players Across Categories')
+
+def create_performance_heatmap(data, title):
+    """
+    Creates a heatmap to visualize player performance across multiple statistics.
+    
+    Parameters:
+    - data (pd.DataFrame): DataFrame containing player statistics
+    - title (str): Title for the visualization
+    """
+    # Select metrics for comparison (excluding Teams)
+    metrics = ['Rating', 'Average Combat Score', 'Kills:Deaths', 
+               'Headshot %', 'Average Damage Per Round', 'Kills Per Round']
+    
+    # Create a copy of the data with selected metrics
+    plot_data = data[metrics].copy()
+    
+    # Normalize the data for each metric (0-1 scale)
+    for column in plot_data.columns:
+        plot_data[column] = (plot_data[column] - plot_data[column].min()) / \
+                           (plot_data[column].max() - plot_data[column].min())
+    
+    # Create figure
+    plt.figure(figsize=(12, 8))
+    
+    # Create heatmap
+    sns.heatmap(plot_data, 
+                annot=True, 
+                cmap='RdYlBu_r',
+                fmt='.2f',
+                cbar_kws={'label': 'Normalized Score'},
+                yticklabels=[f"{player}\n({data.loc[player, 'Teams']})" 
+                            for player in plot_data.index])
+    
+    # Customize the plot
+    plt.title(title, pad=20, fontsize=14)
+    
+    # Rotate x-axis labels for better readability
+    plt.xticks(rotation=45, ha='right')
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Show the plot
+    plt.show()
+
+# Create the heatmap
+create_performance_heatmap(common_players_stats, 'Performance Heatmap of Top Players')
